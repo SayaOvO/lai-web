@@ -1,21 +1,16 @@
 {
   "name": "lai-web",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A simple web framework for practice and fun",
   "main": "dist/lai-web.js",
-  "files": [
-    "dist/lai-web.js"
-  ],
+  "files": ["dist/lai-web.js"],
   "scripts": {
     "prepack": "pnpm build",
     "build": "rollup -c",
     "test": "vitest",
     "lint": "eslint src/"
   },
-  "keywords": [
-    "web framework",
-    "frontend"
-  ],
+  "keywords": ["web framework", "frontend"],
   "author": "Saya",
   "license": "MIT",
   "devDependencies": {

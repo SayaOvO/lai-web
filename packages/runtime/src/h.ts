@@ -18,7 +18,7 @@ export interface ElementVNode {
   props: ElementVNodeProps
   children: VNode[]
   el?: HTMLElement
-  listeners?: EventListener[]
+  listeners?: { [event: string]: EventListener }
 }
 
 export interface FragmentVNode {
