@@ -18,6 +18,7 @@ export interface ElementVNode {
   props: ElementVNodeProps
   children: VNode[]
   el?: HTMLElement
+  listeners?: EventListener[]
 }
 
 export interface FragmentVNode {
@@ -26,12 +27,12 @@ export interface FragmentVNode {
   el?: HTMLElement
 }
 
-interface ElementVNodeProps {
+export interface ElementVNodeProps {
   on?: { [key: string]: EventListener }
   [key: string]: unknown
 }
 
-type VNode = TEXTVNode | ElementVNode | FragmentVNode
+export type VNode = TEXTVNode | ElementVNode | FragmentVNode
 
 export function hString(
   value: string | number | symbol | bigint | boolean
