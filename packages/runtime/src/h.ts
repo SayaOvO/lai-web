@@ -56,7 +56,7 @@ export function h(
   }
 }
 
-export function hFragment(children: ChildNodeType[] = []) {
+export function hFragment(children: ChildNodeType[] = []): FragmentVNode {
   return {
     type: VDOM_TYPE.FRAGMENT,
     children: mapPrimitiveToText(withoutNulls(children)), // null or undefined will render nothing
