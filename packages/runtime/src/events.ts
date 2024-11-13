@@ -18,3 +18,11 @@ function addEventListener(
   el.addEventListener(eventName, handler)
   return handler
 }
+
+export function removeListener(
+  eventName: string,
+  handler: EventListener,
+  el: EventTarget
+) {
+  el.removeEventListener(eventName, handler)
+}
