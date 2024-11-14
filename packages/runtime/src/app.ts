@@ -2,6 +2,7 @@ import { destroyDOM } from './destroy-dom'
 import { Dispatcher } from './dispatcher'
 import { VNode, h } from './h'
 import { mountDOM } from './mount-dom'
+import { patchDOM } from './patch-dom'
 
 type StringKey<Obj> = keyof Obj & string
 interface AppData<State, Actions> {
@@ -47,12 +48,9 @@ export function createApp<State, Actions>({
   }
 
   function renderApp() {
-    if (vdom) {
-      destroyDOM(vdom)
-    }
-    vdom = view(state, emit)
-    if (root) {
-      mountDOM(vdom, root)
+    if (vdom && root) {
+      const newVdom = view(state, emit)
+      vdom = patchDOM(vdom, newVdom, root)
     }
   }
   return {

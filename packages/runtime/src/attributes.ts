@@ -26,15 +26,23 @@ function setClass(className: unknown, el: HTMLElement) {
   }
 }
 
-function setStyle(name: string, value: string, el: HTMLElement) {
+export function setStyle(name: string, value: string, el: HTMLElement) {
   // eslint-disable-next-line
   ;(el.style as any)[name] = value
 }
 
-function setAttribute(name: string, value: unknown, el: HTMLElement) {
+export function removeStyle(name: string, el: HTMLElement) {
+  ;(el.style as any)[name] = ''
+}
+
+export function setAttribute(name: string, value: unknown, el: HTMLElement) {
   if (value == null) {
     el.removeAttribute(name)
   } else if (typeof value === 'string' || typeof value === 'number') {
     el.setAttribute(name, String(value))
   }
+}
+
+export function removeAttribute(name: string, el: HTMLElement) {
+  el.removeAttribute(name)
 }

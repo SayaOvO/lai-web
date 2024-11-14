@@ -10,7 +10,7 @@ export function addEventListeners(
   return added
 }
 
-function addEventListener(
+export function addEventListener(
   eventName: string,
   handler: EventListener,
   el: EventTarget
