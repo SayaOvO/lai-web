@@ -3,11 +3,15 @@ import { Dispatcher } from './dispatcher'
 import { VNode } from './h'
 import { mountDOM } from './mount-dom'
 
+type StringKey<Obj> = keyof Obj & string
 interface AppData<State, Actions> {
   state: State
   view: (
     state: State,
-    emit: (commandName: keyof Actions, payload: Actions[keyof Actions]) => void
+    emit: (
+      commandName: StringKey<Actions>,
+      payload: Actions[StringKey<Actions>]
+    ) => void
   ) => VNode
   reducers: { [K in keyof Actions]: Reducer<State, Actions[K]> }
 }
@@ -22,12 +26,12 @@ export function createApp<State, Actions>({
   let root: HTMLElement | null = null
   let vdom: VNode | null = null
   let isMounted = false
-  const dispatcher = new Dispatcher<Actions, keyof Actions>()
+  const dispatcher = new Dispatcher<StringKey<Actions>, Actions>()
   const unsubs = [dispatcher.afterEveryCommand(renderApp)]
 
   // register reducers
   for (const actionName in reducers) {
-    const reducer = reducers[actionName as keyof Actions]
+    const reducer = reducers[actionName]
     unsubs.push(
       dispatcher.subscribe(actionName, (payload) => {
         state = reducer(state, payload)
@@ -35,7 +39,10 @@ export function createApp<State, Actions>({
     )
   }
 
-  function emit(commandName: keyof Actions, payload: Actions[keyof Actions]) {
+  function emit(
+    commandName: StringKey<Actions>,
+    payload: Actions[StringKey<Actions>]
+  ) {
     dispatcher.dispatch(commandName, payload)
   }
 

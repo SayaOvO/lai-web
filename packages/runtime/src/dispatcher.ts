@@ -1,17 +1,22 @@
 type DispatcherCallback<Payload> = (payload: Payload) => void
 
-export class Dispatcher<Actions, Command extends keyof Actions> {
-  #subs = new Map<Command, Array<(payload: Actions[Command]) => void>>()
+export class Dispatcher<
+  Events extends string,
+  Payloads extends Record<Events, unknown> = Record<Events, any>,
+> {
+  #subs = new Map<Events, DispatcherCallback<Payloads[Events]>[]>()
   #afterCommandHooks: VoidFunction[] = []
 
-  subscribe(
-    command: Command,
-    handler: DispatcherCallback<Actions[Command]>
+  subscribe<EventName extends Events>(
+    command: EventName,
+    handler: DispatcherCallback<Payloads[EventName]>
   ): VoidFunction {
     if (!this.#subs.has(command)) {
       this.#subs.set(command, [])
     }
-    const handlers = this.#subs.get(command)!
+    const handlers = this.#subs.get(command)! as DispatcherCallback<
+      Payloads[EventName]
+    >[]
     if (handlers.includes(handler)) {
       return () => {}
     }
@@ -24,13 +29,17 @@ export class Dispatcher<Actions, Command extends keyof Actions> {
     }
   }
 
-  dispatch(command: Command, payload: Actions[Command]) {
+  dispatch<EventName extends Events>(
+    command: EventName,
+    payload: Payloads[EventName]
+  ) {
     const handlers = this.#subs.get(command)
     if (!handlers) {
       console.warn(`The command: ${String(command)} has not registered`)
     } else {
       handlers.forEach((handler) => handler(payload))
     }
+    this.#afterCommandHooks.forEach((hook) => hook())
   }
 
   afterEveryCommand(hook: () => void) {
@@ -43,3 +52,5 @@ export class Dispatcher<Actions, Command extends keyof Actions> {
     }
   }
 }
+
+const dispatcher = new Dispatcher()
