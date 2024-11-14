@@ -26,7 +26,6 @@ test('save the created text element in the vdom', () => {
 
 test('mount an element in a host element', () => {
   const vdom = h('div', {}, [hString('hello')])
-  console.log(vdom)
   mountDOM(vdom, document.body)
   expect(document.body.innerHTML).toBe('<div>hello</div>')
 })
