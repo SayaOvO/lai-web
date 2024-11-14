@@ -1,7 +1,8 @@
-type DispatcherCallback<Payload> = (payload: Payload) => void
+type DispatcherCallback<Payload> = (payload?: Payload) => void
 
 export class Dispatcher<
   Events extends string,
+  // eslint-disable-next-line
   Payloads extends Record<Events, unknown> = Record<Events, any>,
 > {
   #subs = new Map<Events, DispatcherCallback<Payloads[Events]>[]>()
@@ -31,7 +32,7 @@ export class Dispatcher<
 
   dispatch<EventName extends Events>(
     command: EventName,
-    payload: Payloads[EventName]
+    payload?: Payloads[EventName]
   ) {
     const handlers = this.#subs.get(command)
     if (!handlers) {
@@ -52,5 +53,3 @@ export class Dispatcher<
     }
   }
 }
-
-const dispatcher = new Dispatcher()

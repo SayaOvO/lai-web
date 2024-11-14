@@ -1,6 +1,6 @@
 import { destroyDOM } from './destroy-dom'
 import { Dispatcher } from './dispatcher'
-import { VNode } from './h'
+import { VNode, h } from './h'
 import { mountDOM } from './mount-dom'
 
 type StringKey<Obj> = keyof Obj & string
@@ -10,13 +10,13 @@ interface AppData<State, Actions> {
     state: State,
     emit: (
       commandName: StringKey<Actions>,
-      payload: Actions[StringKey<Actions>]
+      payload?: Actions[StringKey<Actions>]
     ) => void
   ) => VNode
-  reducers: { [K in keyof Actions]: Reducer<State, Actions[K]> }
+  reducers: { [K in keyof Actions]: Reducer<State, Actions[K] | undefined> }
 }
 
-type Reducer<State, Action> = (state: State, payload: Action) => State
+type Reducer<State, Action> = (state: State, payload?: Action) => State
 
 export function createApp<State, Actions>({
   reducers,
@@ -41,7 +41,7 @@ export function createApp<State, Actions>({
 
   function emit(
     commandName: StringKey<Actions>,
-    payload: Actions[StringKey<Actions>]
+    payload?: Actions[StringKey<Actions>]
   ) {
     dispatcher.dispatch(commandName, payload)
   }

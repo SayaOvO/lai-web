@@ -1,5 +1,5 @@
 import { beforeEach, vi, test, expect } from 'vitest'
-import { hString, h, hFragment } from '../h'
+import { hString, h } from '../h'
 import { mountDOM } from '../mount-dom'
 import { destroyDOM } from '../destroy-dom'
 
