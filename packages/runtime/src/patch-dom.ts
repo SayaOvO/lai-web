@@ -25,9 +25,12 @@ export function patchDOM(
 ): VNode {
   // when two vdoms are different type, unmount old, mount new
   if (!nodesEqual(oldVdom, newVdom)) {
-    destroyDOM(oldVdom)
-    mountDOM(newVdom, parentEl)
-    return newVdom
+    if (oldVdom.el) {
+      const index = findIndexInParent(oldVdom.el, parentEl)
+      destroyDOM(oldVdom)
+      mountDOM(newVdom, parentEl, index)
+      return newVdom
+    }
   }
   newVdom.el = oldVdom.el
   const { type } = oldVdom
@@ -41,8 +44,16 @@ export function patchDOM(
     }
   }
 
-  patchChildren(oldVdom, newVdom as ElementVNode | FragmentVNode, oldVdom.el)
+  patchChildren(oldVdom, newVdom as ElementVNode | FragmentVNode)
   return newVdom
+}
+
+function findIndexInParent(parentEl: HTMLElement | Text, el: HTMLElement) {
+  const index = Array.from(parentEl.childNodes).indexOf(el)
+  if (index < 0) {
+    return null
+  }
+  return index
 }
 
 function patchText(oldVdom: TEXTVNode, newVdom: TEXTVNode) {
@@ -126,8 +137,12 @@ function patchClasses(oldClass: unknown, newClass: unknown, el: HTMLElement) {
   const oldClasses = toClassList(oldClass)
   const newClasses = toClassList(newClass)
   const { added, removed } = arraysDiff(oldClasses, newClasses)
-  el.classList.add(...added)
-  el.classList.remove(...removed)
+  if (added.length > 0) {
+    el.classList.add(...added)
+  }
+  if (removed.length > 0) {
+    el.classList.remove(...removed)
+  }
 }
 
 function toClassList(className: unknown): string[] {

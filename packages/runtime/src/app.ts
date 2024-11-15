@@ -59,7 +59,8 @@ export function createApp<State, Actions>({
         throw new Error('The app has already mounted.')
       }
       root = _root
-      renderApp()
+      vdom = view(state, emit)
+      mountDOM(vdom, root, null)
       isMounted = true
     },
     unmount() {
