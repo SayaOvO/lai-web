@@ -1,4 +1,4 @@
-import { ChildNodeType, VNode } from '../h'
+import { ChildNodeType } from '../h'
 
 export function withoutNulls(
   arr: ChildNodeType[]
@@ -114,7 +114,7 @@ class ArrayWithOriginalIndices<T> {
   noopItem(index: number): NoopOperation<T> {
     return {
       op: ARRAY_DIFF_OP.NOOP,
-      originalIndex: this.originalIndexAt(index),
+      originalIndex: this.originalIndexAt(index), // still need path the element for its children
       index,
       item: this.#array[index],
     }
@@ -150,12 +150,14 @@ class ArrayWithOriginalIndices<T> {
 
   moveItem(item: T, toIndex: number): MoveOperation<T> {
     const fromIndex = this.findIndexFrom(item, toIndex)
+    // console.log('to index: 1', item)
+
     const operation: MoveOperation<T> = {
       op: ARRAY_DIFF_OP.MOVE,
       originalIndex: this.originalIndexAt(fromIndex),
       from: fromIndex,
       index: toIndex,
-      item: this.#array[fromIndex],
+      item,
     }
     const [_item] = this.#array.splice(fromIndex, 1)
     this.#array.splice(toIndex, 0, _item)
@@ -202,4 +204,29 @@ export function arraysDiffSequence<T>(
   sequence.push(...array.removeItemsAfter(newArray.length))
 
   return sequence
+}
+
+export function applyArraysDiffSequence<T>(
+  oldArray: T[],
+  seqs: Operation<T>[]
+) {
+  for (const seq of seqs) {
+    const item = seq.item
+    switch (seq.op) {
+      case ARRAY_DIFF_OP.ADD: {
+        oldArray.splice(seq.index, 0, item)
+        break
+      }
+      case ARRAY_DIFF_OP.MOVE: {
+        oldArray.splice((seq as MoveOperation<T>).from, 1)
+        oldArray.splice(seq.index, 0, item)
+        break
+      }
+      case ARRAY_DIFF_OP.REMOVE: {
+        oldArray.splice(seq.index, 1)
+        break
+      }
+    }
+  }
+  return oldArray
 }

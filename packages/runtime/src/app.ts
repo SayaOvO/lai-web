@@ -1,6 +1,6 @@
 import { destroyDOM } from './destroy-dom'
 import { Dispatcher } from './dispatcher'
-import { VNode, h } from './h'
+import { VNode } from './h'
 import { mountDOM } from './mount-dom'
 import { patchDOM } from './patch-dom'
 

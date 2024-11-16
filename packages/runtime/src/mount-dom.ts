@@ -38,7 +38,7 @@ export function mountDOM(
 function insert(
   el: HTMLElement | Text,
   parentEl: HTMLElement,
-  index: number | null
+  index?: number | null
 ) {
   if (index == null) {
     parentEl.append(el)
@@ -58,7 +58,7 @@ function insert(
 function mountTextNode(
   vdom: TEXTVNode,
   parentEl: HTMLElement,
-  index: number | null
+  index?: number | null
 ) {
   const text = document.createTextNode(vdom.value)
   vdom.el = text

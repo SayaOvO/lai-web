@@ -26,7 +26,7 @@ export function patchDOM(
   // when two vdoms are different type, unmount old, mount new
   if (!nodesEqual(oldVdom, newVdom)) {
     if (oldVdom.el) {
-      const index = findIndexInParent(oldVdom.el, parentEl)
+      const index = findIndexInParent(parentEl, oldVdom.el)
       destroyDOM(oldVdom)
       mountDOM(newVdom, parentEl, index)
       return newVdom
@@ -41,6 +41,7 @@ export function patchDOM(
     }
     case VDOM_TYPE.ELEMENT: {
       patchElement(oldVdom, newVdom as ElementVNode)
+      break
     }
   }
 
@@ -48,7 +49,7 @@ export function patchDOM(
   return newVdom
 }
 
-function findIndexInParent(parentEl: HTMLElement | Text, el: HTMLElement) {
+function findIndexInParent(parentEl: HTMLElement, el: HTMLElement | Text) {
   const index = Array.from(parentEl.childNodes).indexOf(el)
   if (index < 0) {
     return null
@@ -92,8 +93,8 @@ function patchChildren(
   oldVdom: ElementVNode | FragmentVNode,
   newVdom: ElementVNode | FragmentVNode
 ) {
-  const oldChildren = oldVdom.children
-  const newChildren = newVdom.children
+  const oldChildren = extractChildren(oldVdom)
+  const newChildren = extractChildren(newVdom)
   const parentEl = oldVdom.el
   if (!parentEl) {
     return
@@ -112,8 +113,8 @@ function patchChildren(
         break
       }
       case ARRAY_DIFF_OP.MOVE: {
-        const { from } = operation as MoveOperation<VNode>
-        const oldChild = oldChildren[from]
+        const { from, originalIndex } = operation as MoveOperation<VNode>
+        const oldChild = oldChildren[originalIndex]
         const newChild = newChildren[index]
         const el = oldChild.el
         if (!el) {
@@ -156,7 +157,11 @@ function toClassList(className: unknown): string[] {
   return []
 }
 
-function patchStyles(oldStyle: unknown, newStyle: unknown, el: HTMLElement) {
+function patchStyles(
+  oldStyle: unknown = {},
+  newStyle: unknown = {},
+  el: HTMLElement
+) {
   if (isStringObject(oldStyle) && isStringObject(newStyle)) {
     const { added, updated, removed } = objectsDiff(oldStyle, newStyle)
     added.forEach((item) => setStyle(item, newStyle[item], el))
@@ -213,4 +218,17 @@ function isStringObject(obj: unknown): obj is Record<string, string> {
     obj !== null &&
     Object.values(obj).every((val) => typeof val === 'string')
   )
+}
+
+function extractChildren(vdom: ElementVNode | FragmentVNode): VNode[] {
+  const children = []
+  for (const child of vdom.children) {
+    if (child.type === VDOM_TYPE.FRAGMENT) {
+      children.push(...extractChildren(child))
+    } else {
+      children.push(child)
+    }
+  }
+
+  return children
 }
