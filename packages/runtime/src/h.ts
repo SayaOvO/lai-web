@@ -86,3 +86,16 @@ function mapPrimitiveToText(
       : child
   )
 }
+
+export function extractChildren(vdom: ElementVNode | FragmentVNode): VNode[] {
+  const children = []
+  for (const child of vdom.children) {
+    if (child.type === VDOM_TYPE.FRAGMENT) {
+      children.push(...extractChildren(child))
+    } else {
+      children.push(child)
+    }
+  }
+
+  return children
+}

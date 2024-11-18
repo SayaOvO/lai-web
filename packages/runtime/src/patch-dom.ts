@@ -6,7 +6,14 @@ import {
 } from './attributes'
 import { destroyDOM } from './destroy-dom'
 import { addEventListener } from './events'
-import { VDOM_TYPE, TEXTVNode, VNode, ElementVNode, FragmentVNode } from './h'
+import {
+  VDOM_TYPE,
+  TEXTVNode,
+  VNode,
+  ElementVNode,
+  FragmentVNode,
+  extractChildren,
+} from './h'
 import { mountDOM } from './mount-dom'
 import {
   ARRAY_DIFF_OP,
@@ -17,11 +24,13 @@ import {
 } from './utils/arrays'
 import { nodesEqual } from './utils/nodes-equal'
 import { objectsDiff } from './utils/objects'
+import { ComponentType } from './component'
 
 export function patchDOM(
   oldVdom: VNode,
   newVdom: VNode,
-  parentEl: HTMLElement
+  parentEl: HTMLElement,
+  hostComponent?: ComponentType
 ): VNode {
   // when two vdoms are different type, unmount old, mount new
   if (!nodesEqual(oldVdom, newVdom)) {
@@ -45,7 +54,7 @@ export function patchDOM(
     }
   }
 
-  patchChildren(oldVdom, newVdom as ElementVNode | FragmentVNode)
+  patchChildren(oldVdom, newVdom as ElementVNode | FragmentVNode, hostComponent)
   return newVdom
 }
 
@@ -91,7 +100,8 @@ function patchElement(oldVdom: ElementVNode, newVdom: ElementVNode) {
 
 function patchChildren(
   oldVdom: ElementVNode | FragmentVNode,
-  newVdom: ElementVNode | FragmentVNode
+  newVdom: ElementVNode | FragmentVNode,
+  hostComponent: ComponentType
 ) {
   const oldChildren = extractChildren(oldVdom)
   const newChildren = extractChildren(newVdom)
@@ -103,9 +113,10 @@ function patchChildren(
 
   for (const operation of diffSeq) {
     const { index, item, op } = operation
+    const offset = hostComponent?.offset ?? 0
     switch (op) {
       case ARRAY_DIFF_OP.ADD: {
-        mountDOM(item, parentEl, index)
+        mountDOM(item, parentEl, index + offset, hostComponent)
         break
       }
       case ARRAY_DIFF_OP.REMOVE: {
@@ -113,21 +124,26 @@ function patchChildren(
         break
       }
       case ARRAY_DIFF_OP.MOVE: {
-        const { from, originalIndex } = operation as MoveOperation<VNode>
+        const { originalIndex } = operation as MoveOperation<VNode>
         const oldChild = oldChildren[originalIndex]
         const newChild = newChildren[index]
         const el = oldChild.el
         if (!el) {
           return
         }
-        const elAtTargetIndex = parentEl.childNodes[index]
+        const elAtTargetIndex = parentEl.childNodes[index + offset]
         parentEl.insertBefore(el, elAtTargetIndex)
-        patchDOM(oldChild, newChild, parentEl)
+        patchDOM(oldChild, newChild, parentEl, hostComponent)
         break
       }
       case ARRAY_DIFF_OP.NOOP: {
         const { originalIndex } = operation as NoopOperation<VNode>
-        patchDOM(oldChildren[originalIndex], newChildren[index], parentEl)
+        patchDOM(
+          oldChildren[originalIndex],
+          newChildren[index],
+          parentEl,
+          hostComponent
+        )
         break
       }
     }
@@ -218,17 +234,4 @@ function isStringObject(obj: unknown): obj is Record<string, string> {
     obj !== null &&
     Object.values(obj).every((val) => typeof val === 'string')
   )
-}
-
-function extractChildren(vdom: ElementVNode | FragmentVNode): VNode[] {
-  const children = []
-  for (const child of vdom.children) {
-    if (child.type === VDOM_TYPE.FRAGMENT) {
-      children.push(...extractChildren(child))
-    } else {
-      children.push(child)
-    }
-  }
-
-  return children
 }
