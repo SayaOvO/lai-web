@@ -105,7 +105,7 @@ export function defineComponent<
       this.#hostEl = parentEl
       this.vdom = this.render()
 
-      mountDOM(this.vdom, parentEl, index)
+      mountDOM(this.vdom, parentEl, index, this)
       this.#isMounted = true
     }
 

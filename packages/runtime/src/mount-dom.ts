@@ -8,11 +8,13 @@ import {
 } from './h'
 import { setAttributes } from './attributes'
 import { addEventListeners } from './events'
+import { Component } from './component'
 
 export function mountDOM(
   vdom: VNode,
   parentEl: HTMLElement,
-  index: number | null
+  index: number | null,
+  hostComponent?: Component // for binding handler's this value
 ) {
   const { type } = vdom
 
@@ -22,7 +24,7 @@ export function mountDOM(
       break
     }
     case VDOM_TYPE.ELEMENT: {
-      mountElementNode(vdom, parentEl, index)
+      mountElementNode(vdom, parentEl, index, hostComponent)
       break
     }
     case VDOM_TYPE.FRAGMENT: {
@@ -68,11 +70,12 @@ function mountTextNode(
 function mountElementNode(
   vdom: ElementVNode,
   parentEl: HTMLElement,
-  index: number | null
+  index: number | null,
+  hostComponent?: Component
 ) {
   const { tag, props, children } = vdom
   const element = document.createElement(tag)
-  addProps(element, vdom, props)
+  addProps(element, vdom, props, hostComponent)
   vdom.el = element
   children.forEach((child) => mountDOM(child, element, null))
   insert(element, parentEl, index)
@@ -93,11 +96,13 @@ function mountFragmentNodes(
 function addProps(
   el: HTMLElement,
   vdom: ElementVNode,
-  props: ElementVNodeProps
+  props: ElementVNodeProps,
+  hostComponent?: Component
 ) {
   const { on: events, ...attrs } = props
+  console.log('[add props]:', hostComponent)
   if (events) {
-    vdom.listeners = addEventListeners(el, events)
+    vdom.listeners = addEventListeners(el, events, hostComponent)
   }
   if (attrs) {
     setAttributes(el, attrs)

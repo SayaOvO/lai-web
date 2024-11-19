@@ -1,6 +1,7 @@
 import { beforeEach, expect, test, vi, describe } from 'vitest'
 import { defineComponent, Component } from '../component'
 import { h, hFragment } from '../h'
+import { mountDOM } from '../mount-dom'
 
 beforeEach(() => {
   vi.unstubAllGlobals()
@@ -157,17 +158,23 @@ describe('updateState', () => {
 
 describe('method', () => {
   test('www', () => {
+    const handleClick = vi.fn()
     type Props = { initialState: number }
     type State = { count: number }
     type Methods = {
-      logState: () => void
+      handleClick: typeof handleClick
     }
     const Button = defineComponent<Props, State, Methods>({
       render() {
         return h(
           'button',
           {
-            on: { click: () => this.logState() },
+            on: {
+              click() {
+                this.handleClick()
+              },
+            },
+            class: 'btn',
           },
           [this.state.count]
         )
@@ -177,9 +184,13 @@ describe('method', () => {
           count: props?.initialState ?? 0,
         }
       },
-      logState() {
-        console.log('The state:', this.state)
-      },
+      handleClick,
     })
+
+    const Btn = new Button()
+    Btn.mount(document.body)
+    const btn = document.querySelector('.btn') as HTMLButtonElement
+    btn.click()
+    expect(handleClick).toBeCalledTimes(1)
   })
 })

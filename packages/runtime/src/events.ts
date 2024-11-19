@@ -1,10 +1,17 @@
+import { Component } from './component'
 export function addEventListeners(
   el: HTMLElement,
-  events: { [key: string]: EventListener }
+  events: { [key: string]: EventListener },
+  hostComponent?: Component
 ) {
   const added: { [key: string]: EventListener } = {}
   for (const eventName in events) {
-    const listener = addEventListener(eventName, events[eventName], el)
+    const listener = addEventListener(
+      eventName,
+      events[eventName],
+      el,
+      hostComponent
+    )
     added[eventName] = listener
   }
   return added
@@ -13,9 +20,12 @@ export function addEventListeners(
 export function addEventListener(
   eventName: string,
   handler: EventListener,
-  el: EventTarget
+  el: EventTarget,
+  hostComponent?: Component
 ) {
-  el.addEventListener(eventName, handler)
+  const boundHandler = hostComponent ? handler.bind(hostComponent) : handler
+
+  el.addEventListener(eventName, boundHandler)
   return handler
 }
 
