@@ -24,13 +24,13 @@ import {
 } from './utils/arrays'
 import { nodesEqual } from './utils/nodes-equal'
 import { objectsDiff } from './utils/objects'
-import { ComponentType } from './component'
+import { Component } from './component'
 
 export function patchDOM(
   oldVdom: VNode,
   newVdom: VNode,
   parentEl: HTMLElement,
-  hostComponent?: ComponentType
+  hostComponent?: Component
 ): VNode {
   // when two vdoms are different type, unmount old, mount new
   if (!nodesEqual(oldVdom, newVdom)) {
@@ -101,7 +101,7 @@ function patchElement(oldVdom: ElementVNode, newVdom: ElementVNode) {
 function patchChildren(
   oldVdom: ElementVNode | FragmentVNode,
   newVdom: ElementVNode | FragmentVNode,
-  hostComponent: ComponentType
+  hostComponent?: Component
 ) {
   const oldChildren = extractChildren(oldVdom)
   const newChildren = extractChildren(newVdom)
@@ -116,7 +116,7 @@ function patchChildren(
     const offset = hostComponent?.offset ?? 0
     switch (op) {
       case ARRAY_DIFF_OP.ADD: {
-        mountDOM(item, parentEl, index + offset, hostComponent)
+        mountDOM(item, parentEl, index + offset)
         break
       }
       case ARRAY_DIFF_OP.REMOVE: {

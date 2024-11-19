@@ -1,38 +1,87 @@
 import { destroyDOM } from './destroy-dom'
-import { VNode, h } from './h'
+import { VDOM_TYPE, VNode, extractChildren, h } from './h'
 import { mountDOM } from './mount-dom'
 import { patchDOM } from './patch-dom'
 
-interface ComponentOptions<Props, State = {}> {
-  render: (this: Component<Props, State>) => VNode
-  state?: (props?: Props) => State
+type MethodDefinition = {
+  [key: string]: (...args: any[]) => any
 }
 
-export interface Component<Props, State = {}> {
-  render: (this: Component<Props, State>) => VNode
+type ComponentOptions<
+  Props,
+  State = {},
+  Methods extends MethodDefinition = {},
+> = {
+  render: (this: Component<Props, State, Methods>) => VNode
+  state?: (props?: Props) => State
+} & {
+  [K in keyof Methods]: (
+    this: Component<Props, State, Methods>,
+    ...args: Parameters<Methods[K]>
+  ) => ReturnType<Methods[K]>
+}
+
+export type Component<
+  Props = {},
+  State = {},
+  Methods extends MethodDefinition = {},
+> = {
+  render: (this: Component<Props, State, Methods>) => VNode
   mount: (parentEl: HTMLElement, index?: number | null) => void
   state: State
   unmount: () => void
   updateState: (newState: Partial<State>) => void
-}
+  offset: number
+} & Methods
 
-export function defineComponent<Props, State = {}>({
+export function defineComponent<
+  Props,
+  State = {},
+  Methods extends MethodDefinition = {},
+>({
   render,
   state,
-}: ComponentOptions<Props, State>): new (
+  ...methods
+}: ComponentOptions<Props, State, Methods>): new (
   props?: Props
-) => Component<Props, State> {
+) => Component<Props, State, Methods> {
   class UserComponent implements Component<Props, State> {
     #hostEl: HTMLElement | null = null
     #isMounted = false
     vdom: VNode | null = null
     state: State = {} as State
 
+    // when the component is mounted, get its top-level children
+    get #elements() {
+      if (!this.vdom || !this.vdom.el) return []
+      if (this.vdom.type === VDOM_TYPE.FRAGMENT) {
+        const children = extractChildren(this.vdom)
+        return children.map((child) => child.el!)
+      }
+      return [this.vdom.el]
+    }
+
+    get offset() {
+      if (!this.#hostEl) return 0
+      const firstElement = this.#elements[0]
+      return Array.from(this.#hostEl.childNodes).indexOf(firstElement)
+    }
+
     constructor(props?: Props) {
       this.state = state ? state(props) : ({} as State)
+      Object.entries(methods).forEach(([key, method]) => {
+        if (
+          Object.prototype.hasOwnProperty.call(UserComponent.prototype, key)
+        ) {
+          console.error(`The method: ${method} is reserved.`)
+          return
+        }
+        ;(this as any)[key] = method.bind(this)
+      })
     }
+
     render(): VNode {
-      return render.call(this)
+      return render.call(this as unknown as Component<Props, State, Methods>)
     }
 
     updateState(state: Partial<State>) {
@@ -46,8 +95,7 @@ export function defineComponent<Props, State = {}>({
         return
       }
       const newVdom = this.render()
-      console.log('newVdom:', newVdom)
-      this.vdom = patchDOM(this.vdom, newVdom, this.#hostEl)
+      this.vdom = patchDOM(this.vdom, newVdom, this.#hostEl, this as Component)
     }
 
     mount(parentEl: HTMLElement, index: number | null = null) {
@@ -75,5 +123,7 @@ export function defineComponent<Props, State = {}>({
     }
   }
 
-  return UserComponent
+  return UserComponent as unknown as new (
+    props?: Props
+  ) => Component<Props, State, Methods>
 }
