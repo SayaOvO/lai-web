@@ -1,6 +1,6 @@
 import { beforeEach, expect, test, vi, describe } from 'vitest'
-import { defineComponent, Component } from '../component'
-import { ElementVNodeProps, h, hFragment } from '../h'
+import { defineComponent } from '../component'
+import { h, hFragment } from '../h'
 import { mountDOM } from '../mount-dom'
 
 beforeEach(() => {
@@ -8,197 +8,197 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
-// describe('test static component', () => {
-//   const Button = defineComponent({
-//     render() {
-//       return h('button', {}, ['a button'])
-//     },
-//   })
+describe('test static component', () => {
+  const Button = defineComponent({
+    render() {
+      return h('button', {}, ['a button'])
+    },
+  })
 
-//   test('render method', () => {
-//     const btn = new Button()
-//     expect(btn.render()).toEqual(h('button', {}, ['a button']))
-//   })
+  test('render method', () => {
+    const btn = new Button()
+    expect(btn.render()).toEqual(h('button', {}, ['a button']))
+  })
 
-//   test('mount method', () => {
-//     const btn = new Button()
-//     btn.mount(document.body)
-//     expect(document.body.innerHTML).toBe('<button>a button</button>')
-//   })
-// })
+  test('mount method', () => {
+    const btn = new Button()
+    btn.mount(document.body)
+    expect(document.body.innerHTML).toBe('<button>a button</button>')
+  })
+})
 
-// describe('a stateful component', () => {
-//   const Button = defineComponent<{}, { count: number }>({
-//     render() {
-//       return h('button', {}, [this.state.count])
-//     },
-//     state() {
-//       return { count: 0 }
-//     },
-//   })
+describe('a stateful component', () => {
+  const Button = defineComponent<{ count: number }>({
+    render() {
+      return h('button', {}, [this.state.count])
+    },
+    state() {
+      return { count: 0 }
+    },
+  })
 
-//   test('render method', () => {
-//     const btn = new Button()
-//     expect(btn.render()).toEqual(h('button', {}, [0]))
-//   })
+  test('render method', () => {
+    const btn = new Button()
+    expect(btn.render()).toEqual(h('button', {}, [0]))
+  })
 
-//   test('mount method', () => {
-//     const btn = new Button()
-//     btn.mount(document.body)
-//     expect(document.body.innerHTML).toBe('<button>0</button>')
-//   })
+  test('mount method', () => {
+    const btn = new Button()
+    btn.mount(document.body)
+    expect(document.body.innerHTML).toBe('<button>0</button>')
+  })
 
-//   test('unmount', () => {
-//     const btn = new Button()
-//     btn.mount(document.body)
-//     expect(document.body.innerHTML).toBe('<button>0</button>')
-//     btn.unmount()
-//     expect(document.body.innerHTML).toBe('')
-//   })
+  test('unmount', () => {
+    const btn = new Button()
+    btn.mount(document.body)
+    expect(document.body.innerHTML).toBe('<button>0</button>')
+    btn.unmount()
+    expect(document.body.innerHTML).toBe('')
+  })
 
-//   test('component with props', () => {
-//     type Props = { initialState: number }
-//     type State = { count: number }
-//     const Button = defineComponent<Props, State>({
-//       render() {
-//         return h('button', {}, [this.state.count])
-//       },
-//       state(props?: { initialState: number }) {
-//         return {
-//           count: props?.initialState ?? 0,
-//         }
-//       },
-//     })
+  test('component with props', () => {
+    type Props = { initialState: number }
+    type State = { count: number }
+    const Button = defineComponent<State, Props>({
+      render() {
+        return h('button', {}, [this.state.count])
+      },
+      state(props?: { initialState: number }) {
+        return {
+          count: props?.initialState ?? 0,
+        }
+      },
+    })
 
-//     const btn = new Button({
-//       initialState: 2,
-//     })
-//     expect(btn.render()).toEqual(h('button', {}, [2]))
-//   })
+    const btn = new Button({
+      initialState: 2,
+    })
+    expect(btn.render()).toEqual(h('button', {}, [2]))
+  })
 
-//   test('component return fragment', () => {
-//     const Comp = defineComponent({
-//       render() {
-//         return hFragment([
-//           h('button', {}, ['button one']),
-//           h('button', {}, ['button two']),
-//         ])
-//       },
-//     })
-//     document.body.append(document.createElement('p'))
-//     const cmp = new Comp()
-//     cmp.mount(document.body)
-//     expect(document.body.innerHTML).toEqual(
-//       '<p></p><button>button one</button><button>button two</button>'
-//     )
-//   })
-// })
+  test('component return fragment', () => {
+    const Comp = defineComponent({
+      render() {
+        return hFragment([
+          h('button', {}, ['button one']),
+          h('button', {}, ['button two']),
+        ])
+      },
+    })
+    document.body.append(document.createElement('p'))
+    const cmp = new Comp()
+    cmp.mount(document.body)
+    expect(document.body.innerHTML).toEqual(
+      '<p></p><button>button one</button><button>button two</button>'
+    )
+  })
+})
 
-// describe('updateState', () => {
-//   test('', () => {
-//     type Props = { initialState: number }
-//     type State = { count: number }
-//     const Button = defineComponent<Props, State>({
-//       render() {
-//         return h('button', {}, [this.state.count])
-//       },
-//       state(props?: { initialState: number }) {
-//         return {
-//           count: props?.initialState ?? 0,
-//         }
-//       },
-//     })
+describe('updateState', () => {
+  test('', () => {
+    type Props = { initialState: number }
+    type State = { count: number }
+    const Button = defineComponent<State, Props>({
+      render() {
+        return h('button', {}, [this.state.count])
+      },
+      state(props?: { initialState: number }) {
+        return {
+          count: props?.initialState ?? 0,
+        }
+      },
+    })
 
-//     const btn = new Button({
-//       initialState: 2,
-//     })
-//     expect(btn.render()).toEqual(h('button', {}, [2]))
-//     btn.mount(document.body)
-//     btn.updateState({
-//       count: 5,
-//     })
-//     expect(btn.render()).toEqual(h('button', {}, [5]))
-//     expect(document.body.innerHTML).toEqual('<button>5</button>')
-//   })
+    const btn = new Button({
+      initialState: 2,
+    })
+    expect(btn.render()).toEqual(h('button', {}, [2]))
+    btn.mount(document.body)
+    btn.updateState({
+      count: 5,
+    })
+    expect(btn.render()).toEqual(h('button', {}, [5]))
+    expect(document.body.innerHTML).toEqual('<button>5</button>')
+  })
 
-//   test('the component is not the only child of its parent', () => {
-//     type Props = { initialState: number }
-//     type State = { count: number }
-//     const Button = defineComponent<Props, State>({
-//       render() {
-//         const children = Array.from({ length: this.state.count }, (_, idx) =>
-//           h('button', {}, [`button ${idx}`])
-//         )
-//         return hFragment(children)
-//       },
-//       state(props?: { initialState: number }) {
-//         return {
-//           count: props?.initialState ?? 0,
-//         }
-//       },
-//     })
+  test('the component is not the only child of its parent', () => {
+    type Props = { initialState: number }
+    type State = { count: number }
+    const Button = defineComponent<State, Props>({
+      render() {
+        const children = Array.from({ length: this.state.count }, (_, idx) =>
+          h('button', {}, [`button ${idx}`])
+        )
+        return hFragment(children)
+      },
+      state(props?: { initialState: number }) {
+        return {
+          count: props?.initialState ?? 0,
+        }
+      },
+    })
 
-//     const btn = new Button({
-//       initialState: 2,
-//     })
-//     document.body.append(document.createElement('p'))
-//     btn.mount(document.body)
-//     expect(document.body.innerHTML).toEqual(
-//       '<p></p><button>button 0</button><button>button 1</button>'
-//     )
-//     btn.updateState({
-//       count: 3,
-//     })
-//     expect(document.body.innerHTML).toEqual(
-//       '<p></p><button>button 0</button><button>button 1</button><button>button 2</button>'
-//     )
-//   })
-// })
+    const btn = new Button({
+      initialState: 2,
+    })
+    document.body.append(document.createElement('p'))
+    btn.mount(document.body)
+    expect(document.body.innerHTML).toEqual(
+      '<p></p><button>button 0</button><button>button 1</button>'
+    )
+    btn.updateState({
+      count: 3,
+    })
+    expect(document.body.innerHTML).toEqual(
+      '<p></p><button>button 0</button><button>button 1</button><button>button 2</button>'
+    )
+  })
+})
 
-// describe('method', () => {
-//   test('bind event listener', () => {
-//     const handleClick = vi.fn()
-//     type Props = { initialState: number }
-//     type State = { count: number }
-//     type Methods = {
-//       handleClick: typeof handleClick
-//     }
-//     const Button = defineComponent<Props, State, Methods>({
-//       render() {
-//         return h(
-//           'button',
-//           {
-//             on: {
-//               click: this.handleClick,
-//             },
-//             class: 'btn',
-//           },
-//           [this.state.count]
-//         )
-//       },
-//       state(props?: { initialState: number }) {
-//         return {
-//           count: props?.initialState ?? 0,
-//         }
-//       },
-//       handleClick,
-//     })
+describe('method', () => {
+  test('bind event listener', () => {
+    const handleClick = vi.fn()
+    type Props = { initialState: number }
+    type State = { count: number }
+    type Methods = {
+      handleClick: typeof handleClick
+    }
+    const Button = defineComponent<State, Props, Methods>({
+      render() {
+        return h(
+          'button',
+          {
+            on: {
+              click: this.handleClick,
+            },
+            class: 'btn',
+          },
+          [this.state.count]
+        )
+      },
+      state(props?: { initialState: number }) {
+        return {
+          count: props?.initialState ?? 0,
+        }
+      },
+      handleClick,
+    })
 
-//     const Btn = new Button()
-//     Btn.mount(document.body)
-//     const btn = document.querySelector('.btn') as HTMLButtonElement
-//     btn.click()
-//     expect(handleClick).toBeCalledTimes(1)
-//   })
-// })
+    const Btn = new Button()
+    Btn.mount(document.body)
+    const btn = document.querySelector('.btn') as HTMLButtonElement
+    btn.click()
+    expect(handleClick).toBeCalledTimes(1)
+  })
+})
 
 describe('nested componet', () => {
   type Props = { initialState: number }
   type State = { count: number }
-  const Button = defineComponent<Props, State>({
+  const Button = defineComponent<State, Props>({
     render() {
       const children = Array.from({ length: this.state.count }, (_, idx) =>
-        h('button', {}, [`button ${idx}`])
+        h('button', { key: idx }, [`button ${idx}`])
       )
       return hFragment(children)
     },
@@ -237,35 +237,24 @@ describe('nested componet', () => {
     expect(document.body.innerHTML).toBe('<div></div>')
   })
 
-  test('event listener', () => {
-    const Button = defineComponent({
+  test('key', () => {
+    const Container = defineComponent({
       render() {
-        return h('button', {
-          on: {
-            click: () => this.emit('incr', null),
-          },
-        })
+        return h(
+          'div',
+          {},
+          Array.from({ length: 2 }, () => h(Button, { initialState: 2 }))
+        )
       },
     })
+    const c = new Container()
+    c.mount(document.body)
 
-    const Container = defineComponent<
-      any,
-      { count: number },
-      {
-        onClick: () => void
-      }
-    >({
-      render() {
-        return h('div', {}, [
-          h('p', {}, [this.state.count]),
-          h(Button, { incr: this.onClick() }),
-        ])
-      },
-      onClick() {
-        this.updateState({
-          count: this.state.count + 1,
-        })
-      },
-    })
+    expect(document.body.innerHTML).toBe(
+      '<div><button>button 0</button><button>button 1</button><button>button 0</button><button>button 1</button></div>'
+    )
   })
+
+  // TODO: elements seem not work
+  test('elements', () => {})
 })

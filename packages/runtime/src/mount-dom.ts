@@ -80,9 +80,9 @@ function mountElementNode(
   index: number | null,
   hostComponent?: Component
 ) {
-  const { tag, props, children } = vdom
+  const { tag, children } = vdom
   const element = document.createElement(tag)
-  addProps(element, vdom, props, hostComponent)
+  addProps(element, vdom, hostComponent)
   vdom.el = element
   children.forEach((child) => mountDOM(child, element, null, hostComponent))
   insert(element, parentEl, index)
@@ -118,14 +118,13 @@ function mountFragmentNodes(
 function addProps(
   el: HTMLElement,
   vdom: ElementVNode,
-  props: ElementVNodeProps,
   hostComponent?: Component
 ) {
-  const { on: events, ...attrs } = props
+  const { events, props } = extractPropsAndEvents(vdom)
   if (events) {
     vdom.listeners = addEventListeners(el, events, hostComponent)
   }
-  if (attrs) {
-    setAttributes(el, attrs)
+  if (props) {
+    setAttributes(el, props)
   }
 }
