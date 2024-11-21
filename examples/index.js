@@ -3,7 +3,8 @@ import {
     defineComponent,
     h,
     hFragment,
-} from "../packages/runtime/dist/lai-web.js";
+    mountDOM,
+} from "https://unpkg.com/fe-fwk";
 const container = document.getElementById("app");
 
 // const state = {
@@ -159,35 +160,39 @@ const container = document.getElementById("app");
 
 // app.mount(container);
 
-const Button = defineComponent({
+const MyFancyButton = defineComponent({
     render() {
         return h(
             "button",
             {
                 on: {
-                    click() {
-                        this.handleClick();
-                        console.log("this:", this);
-                    },
+                    click: () => this.emit("btnClicked"),
                 },
-                class: "btn",
             },
-            [this.state.count],
+            ["Click me"],
         );
     },
-    state(props) {
-        return {
-            count: props?.initialState ?? 0,
-        };
-    },
-    handleClick,
 });
 
-function handleClick() {
-    this.updateState({
-        count: this.state.count + 1,
-    });
-}
+const ParentComponent = defineComponent({
+    state() {
+        return { counter: 0 };
+    },
+    render() {
+        const counter = this.state.counter;
+        return hFragment([
+            h("p", {}, [`The count is: ${counter}`]),
+            h(MyFancyButton, {
+                on: {
+                    btnClicked: () => {
+                        this.updateState({ counter: counter + 1 });
+                    },
+                },
+            }),
+        ]);
+    },
+});
 
-const Btn = new Button();
-Btn.mount(container);
+const vdom = h(ParentComponent);
+
+mountDOM(vdom, container);

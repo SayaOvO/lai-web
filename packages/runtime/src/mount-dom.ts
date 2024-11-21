@@ -5,10 +5,12 @@ import {
   VDOM_TYPE,
   VNode,
   ElementVNodeProps,
+  ComponentVNode,
 } from './h'
 import { setAttributes } from './attributes'
 import { addEventListeners } from './events'
 import { Component } from './component'
+import { extractPropsAndEvents } from './utils/props'
 
 export function mountDOM(
   vdom: VNode,
@@ -28,7 +30,11 @@ export function mountDOM(
       break
     }
     case VDOM_TYPE.FRAGMENT: {
-      mountFragmentNodes(vdom, parentEl, index)
+      mountFragmentNodes(vdom, parentEl, index, hostComponent)
+      break
+    }
+    case VDOM_TYPE.COMPONENT: {
+      mountComponentNode(vdom, parentEl, index, hostComponent)
       break
     }
     default: {
@@ -44,6 +50,7 @@ function insert(
 ) {
   if (index == null) {
     parentEl.append(el)
+
     return
   }
   if (index < 0) {
@@ -77,18 +84,33 @@ function mountElementNode(
   const element = document.createElement(tag)
   addProps(element, vdom, props, hostComponent)
   vdom.el = element
-  children.forEach((child) => mountDOM(child, element, null))
+  children.forEach((child) => mountDOM(child, element, null, hostComponent))
   insert(element, parentEl, index)
+}
+
+function mountComponentNode(
+  vdom: ComponentVNode,
+  parentEl: HTMLElement,
+  index: number | null,
+  hostComponent: Component | null = null
+) {
+  const { tag: Component } = vdom
+  const { props, events } = extractPropsAndEvents(vdom)
+  const component = new Component(props, events, hostComponent)
+  component.mount(parentEl, index)
+  vdom.component = component
+  vdom.el = component.firstElement
 }
 
 function mountFragmentNodes(
   vdom: FragmentVNode,
   parentEl: HTMLElement,
-  index: number | null
+  index: number | null,
+  hostComponent?: Component
 ) {
   const { children } = vdom
   children.forEach((child, i) =>
-    mountDOM(child, parentEl, index ? index + i : null)
+    mountDOM(child, parentEl, index ? index + i : null, hostComponent)
   )
   vdom.el = parentEl
 }
@@ -100,7 +122,6 @@ function addProps(
   hostComponent?: Component
 ) {
   const { on: events, ...attrs } = props
-  console.log('[add props]:', hostComponent)
   if (events) {
     vdom.listeners = addEventListeners(el, events, hostComponent)
   }

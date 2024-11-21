@@ -1,9 +1,11 @@
 import { withoutNulls } from './utils/arrays'
+import { Component, ComponentClass } from './component'
 
 export enum VDOM_TYPE {
   TEXT,
   ELEMENT,
   FRAGMENT,
+  COMPONENT,
 }
 
 export interface TEXTVNode {
@@ -21,6 +23,16 @@ export interface ElementVNode {
   listeners?: { [event: string]: EventListener }
 }
 
+export interface ComponentVNode {
+  type: VDOM_TYPE.COMPONENT
+  tag: ComponentClass
+  props: ElementVNodeProps
+  children: VNode[]
+  component?: Component
+  el?: HTMLElement | Text
+  listeners?: { [event: string]: EventListener }
+}
+
 export interface FragmentVNode {
   type: VDOM_TYPE.FRAGMENT
   children: VNode[]
@@ -32,7 +44,7 @@ export interface ElementVNodeProps {
   [key: string]: unknown
 }
 
-export type VNode = TEXTVNode | ElementVNode | FragmentVNode
+export type VNode = TEXTVNode | ElementVNode | FragmentVNode | ComponentVNode
 
 export function hString(
   value: string | number | symbol | bigint | boolean
@@ -44,13 +56,21 @@ export function hString(
 }
 
 export function h(
-  tag: string,
+  tag: string | ComponentClass,
   props: ElementVNodeProps = {},
   children: ChildNodeType[] = []
-): ElementVNode {
+): ElementVNode | ComponentVNode {
+  if (typeof tag === 'string') {
+    return {
+      type: VDOM_TYPE.ELEMENT,
+      tag: tag,
+      props,
+      children: mapPrimitiveToText(withoutNulls(children)),
+    }
+  }
   return {
-    type: VDOM_TYPE.ELEMENT,
-    tag,
+    type: VDOM_TYPE.COMPONENT,
+    tag: tag,
     props,
     children: mapPrimitiveToText(withoutNulls(children)),
   }
@@ -87,7 +107,9 @@ function mapPrimitiveToText(
   )
 }
 
-export function extractChildren(vdom: ElementVNode | FragmentVNode): VNode[] {
+export function extractChildren(
+  vdom: ElementVNode | FragmentVNode | ComponentVNode
+): VNode[] {
   const children = []
   for (const child of vdom.children) {
     if (child.type === VDOM_TYPE.FRAGMENT) {

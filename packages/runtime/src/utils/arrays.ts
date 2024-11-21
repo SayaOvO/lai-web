@@ -150,7 +150,6 @@ class ArrayWithOriginalIndices<T> {
 
   moveItem(item: T, toIndex: number): MoveOperation<T> {
     const fromIndex = this.findIndexFrom(item, toIndex)
-    // console.log('to index: 1', item)
 
     const operation: MoveOperation<T> = {
       op: ARRAY_DIFF_OP.MOVE,

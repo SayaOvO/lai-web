@@ -1,16 +1,23 @@
+import equal from 'fast-deep-equal'
 import { destroyDOM } from './destroy-dom'
-import { VDOM_TYPE, VNode, extractChildren, h } from './h'
+import { ElementVNodeProps, VDOM_TYPE, VNode, extractChildren, h } from './h'
 import { mountDOM } from './mount-dom'
 import { patchDOM } from './patch-dom'
+import { Dispatcher } from './dispatcher'
 
-type MethodDefinition = {
+export type MethodDefinition = {
   [key: string]: (...args: any[]) => any
 }
 
+export type ComponentEvents = string
+export type ComponentPayloads = Record<ComponentEvents, any>
+
 type ComponentOptions<
-  Props,
+  Props = {},
   State = {},
   Methods extends MethodDefinition = {},
+  Events extends ComponentEvents = ComponentEvents,
+  Payloads extends ComponentPayloads = ComponentPayloads,
 > = {
   render: (this: Component<Props, State, Methods>) => VNode
   state?: (props?: Props) => State
@@ -29,10 +36,29 @@ export type Component<
   render: (this: Component<Props, State, Methods>) => VNode
   mount: (parentEl: HTMLElement, index?: number | null) => void
   state: State
+  props: Props
   unmount: () => void
   updateState: (newState: Partial<State>) => void
+  updateProps: (newProps: Props) => void
   offset: number
+  elements: (HTMLElement | Text)[]
+  firstElement: HTMLElement | Text
+  emit: (commandName: string, payload: any) => void
 } & Methods
+
+export type CustomEventListeners = {
+  [key: string]: (...args: any[]) => any
+}
+
+export type ComponentClass<
+  Props = any,
+  State = any,
+  Methods extends MethodDefinition = {},
+> = new (
+  props?: Props,
+  events?: CustomEventListeners,
+  parentComponent?: Component | null
+) => Component<Props, State, Methods>
 
 export function defineComponent<
   Props,
@@ -42,33 +68,56 @@ export function defineComponent<
   render,
   state,
   ...methods
-}: ComponentOptions<Props, State, Methods>): new (
-  props?: Props
-) => Component<Props, State, Methods> {
+}: ComponentOptions<Props, State, Methods>): ComponentClass<
+  Props,
+  State,
+  Methods
+> {
   class UserComponent implements Component<Props, State> {
-    #hostEl: HTMLElement | null = null
+    #hostEl: HTMLElement | null = null // where the component mounted
     #isMounted = false
-    vdom: VNode | null = null
+    vdom: VNode | null = null // vdom represent component
     state: State = {} as State
+    props: Props = {} as Props
+    #dispatcher = new Dispatcher()
+    #eventListeners: Pick<ElementVNodeProps, 'on'> = {}
+    #parentComponent: Component | null = null
+    #subscriptions: VoidFunction[] = []
 
     // when the component is mounted, get its top-level children
-    get #elements() {
+    get elements(): (HTMLElement | Text)[] {
       if (!this.vdom || !this.vdom.el) return []
       if (this.vdom.type === VDOM_TYPE.FRAGMENT) {
         const children = extractChildren(this.vdom)
-        return children.map((child) => child.el!)
+        return children.flatMap((child) => {
+          if (child.type === VDOM_TYPE.COMPONENT) {
+            if (!child.component) return []
+            return child.component.elements
+          }
+          return [child.el!]
+        })
       }
       return [this.vdom.el]
     }
 
-    get offset() {
-      if (!this.#hostEl) return 0
-      const firstElement = this.#elements[0]
-      return Array.from(this.#hostEl.childNodes).indexOf(firstElement)
+    get firstElement() {
+      return this.elements[0]
     }
 
-    constructor(props?: Props) {
+    get offset() {
+      if (!this.#hostEl) return 0
+      return Array.from(this.#hostEl.childNodes).indexOf(this.firstElement)
+    }
+
+    constructor(
+      props: Props,
+      events: CustomEventListeners = {},
+      parentComponent: Component | null = null
+    ) {
       this.state = state ? state(props) : ({} as State)
+      this.props = props || ({} as Props)
+      this.#eventListeners = events
+      this.#parentComponent = parentComponent
       Object.entries(methods).forEach(([key, method]) => {
         if (
           Object.prototype.hasOwnProperty.call(UserComponent.prototype, key)
@@ -89,6 +138,19 @@ export function defineComponent<
       this.#patch()
     }
 
+    updateProps(props: Props) {
+      const newProps = { ...this.props, ...props }
+      if (!equal(newProps, this.props)) {
+        this.props = newProps
+        this.#patch()
+      } else {
+        this.props = newProps
+      }
+    }
+    emit(commandName: string, payload: any) {
+      this.#dispatcher.dispatch(commandName, payload)
+    }
+
     // rerender
     #patch() {
       if (!this.vdom || !this.#hostEl) {
@@ -105,7 +167,8 @@ export function defineComponent<
       this.#hostEl = parentEl
       this.vdom = this.render()
 
-      mountDOM(this.vdom, parentEl, index, this)
+      mountDOM(this.vdom, parentEl, index, this as Component)
+      this.#wireEventHandlers()
       this.#isMounted = true
     }
 
@@ -119,11 +182,26 @@ export function defineComponent<
         this.vdom = null
         this.#isMounted = false
         this.state = {} as State
+        this.#subscriptions.forEach((unsub) => unsub())
       }
+    }
+
+    #wireEventHandlers() {
+      Object.entries(this.#eventListeners).forEach(([eventName, handler]) => {
+        this.#subscriptions.push(this.#wireEventHandler(eventName, handler))
+      })
+    }
+
+    #wireEventHandler(eventName, handler) {
+      return this.#dispatcher.subscribe(eventName, (payload) => {
+        if (this.#parentComponent) {
+          handler.call(this.#parentComponent, payload)
+        } else {
+          handler(payload)
+        }
+      })
     }
   }
 
-  return UserComponent as unknown as new (
-    props?: Props
-  ) => Component<Props, State, Methods>
+  return UserComponent as unknown as ComponentClass<Props, State, Methods>
 }

@@ -13,6 +13,7 @@ import {
   ElementVNode,
   FragmentVNode,
   extractChildren,
+  ComponentVNode,
 } from './h'
 import { mountDOM } from './mount-dom'
 import {
@@ -25,12 +26,13 @@ import {
 import { nodesEqual } from './utils/nodes-equal'
 import { objectsDiff } from './utils/objects'
 import { Component } from './component'
+import { extractPropsAndEvents } from './utils/props'
 
 export function patchDOM(
   oldVdom: VNode,
   newVdom: VNode,
   parentEl: HTMLElement,
-  hostComponent?: Component
+  hostComponent: Component
 ): VNode {
   // when two vdoms are different type, unmount old, mount new
   if (!nodesEqual(oldVdom, newVdom)) {
@@ -49,7 +51,11 @@ export function patchDOM(
       return newVdom
     }
     case VDOM_TYPE.ELEMENT: {
-      patchElement(oldVdom, newVdom as ElementVNode)
+      patchElement(oldVdom, newVdom as ElementVNode, hostComponent)
+      break
+    }
+    case VDOM_TYPE.COMPONENT: {
+      patchComponent(oldVdom, newVdom as ComponentVNode)
       break
     }
   }
@@ -74,7 +80,11 @@ function patchText(oldVdom: TEXTVNode, newVdom: TEXTVNode) {
   el.textContent = newVdom.value
 }
 
-function patchElement(oldVdom: ElementVNode, newVdom: ElementVNode) {
+function patchElement(
+  oldVdom: ElementVNode,
+  newVdom: ElementVNode,
+  hostComponent: Component
+) {
   const { el } = oldVdom
   if (!el) {
     return
@@ -95,13 +105,28 @@ function patchElement(oldVdom: ElementVNode, newVdom: ElementVNode) {
   patchStyles(oldStyle, newStyle, el)
   patchAttrs(oldAttrs, newAttrs, el)
   const { listeners } = oldVdom
-  newVdom.listeners = patchEvents(listeners, oldEvents, newEvents, el)
+  newVdom.listeners = patchEvents(
+    listeners,
+    oldEvents,
+    newEvents,
+    el,
+    hostComponent
+  )
+}
+
+function patchComponent(oldVdom: ComponentVNode, newVdom: ComponentVNode) {
+  const { component } = oldVdom
+  if (!component) return
+  const { props } = extractPropsAndEvents(newVdom)
+  component.updateProps(props)
+  newVdom.component = component
+  newVdom.el = component.firstElement
 }
 
 function patchChildren(
-  oldVdom: ElementVNode | FragmentVNode,
-  newVdom: ElementVNode | FragmentVNode,
-  hostComponent?: Component
+  oldVdom: ElementVNode | FragmentVNode | ComponentVNode,
+  newVdom: ElementVNode | FragmentVNode | ComponentVNode,
+  hostComponent: Component
 ) {
   const oldChildren = extractChildren(oldVdom)
   const newChildren = extractChildren(newVdom)
@@ -116,7 +141,7 @@ function patchChildren(
     const offset = hostComponent?.offset ?? 0
     switch (op) {
       case ARRAY_DIFF_OP.ADD: {
-        mountDOM(item, parentEl, index + offset)
+        mountDOM(item, parentEl as HTMLElement, index + offset)
         break
       }
       case ARRAY_DIFF_OP.REMOVE: {
@@ -133,7 +158,7 @@ function patchChildren(
         }
         const elAtTargetIndex = parentEl.childNodes[index + offset]
         parentEl.insertBefore(el, elAtTargetIndex)
-        patchDOM(oldChild, newChild, parentEl, hostComponent)
+        patchDOM(oldChild, newChild, parentEl as HTMLElement, hostComponent)
         break
       }
       case ARRAY_DIFF_OP.NOOP: {
@@ -141,7 +166,7 @@ function patchChildren(
         patchDOM(
           oldChildren[originalIndex],
           newChildren[index],
-          parentEl,
+          parentEl as HTMLElement,
           hostComponent
         )
         break
@@ -212,7 +237,8 @@ function patchEvents(
   oldListeners: { [event: string]: EventListener } = {},
   oldEvents: { [key: string]: EventListener } = {},
   newEvents: { [key: string]: EventListener } = {},
-  el: HTMLElement
+  el: HTMLElement,
+  hostComponet: Component
 ) {
   const { added, removed, updated } = objectsDiff(oldEvents, newEvents)
   // remove old
@@ -221,7 +247,12 @@ function patchEvents(
   }
   const addedListeners: { [key: string]: EventListener } = {}
   for (const eventName of added.concat(updated)) {
-    const listener = addEventListener(eventName, newEvents[eventName], el)
+    const listener = addEventListener(
+      eventName,
+      newEvents[eventName],
+      el,
+      hostComponet
+    )
     addedListeners[eventName] = listener
   }
   return addedListeners

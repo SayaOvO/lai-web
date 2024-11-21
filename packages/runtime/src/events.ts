@@ -24,9 +24,8 @@ export function addEventListener(
   hostComponent?: Component
 ) {
   const boundHandler = hostComponent ? handler.bind(hostComponent) : handler
-
   el.addEventListener(eventName, boundHandler)
-  return handler
+  return boundHandler
 }
 
 export function removeListener(
