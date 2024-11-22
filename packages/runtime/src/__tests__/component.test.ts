@@ -254,7 +254,4 @@ describe('nested componet', () => {
       '<div><button>button 0</button><button>button 1</button><button>button 0</button><button>button 1</button></div>'
     )
   })
-
-  // TODO: elements seem not work
-  test('elements', () => {})
 })

@@ -16,6 +16,8 @@ type ComponentOptions<
 > = {
   render: (this: Component<State, Props, Methods>) => VNode
   state?: (props?: Props) => State
+  onMounted: Hook
+  onUnmounted: Hook
 } & {
   [K in keyof Methods]: (
     this: Component<State, Props, Methods>,
@@ -55,6 +57,9 @@ export type ComponentClass<
   parentComponent?: Component | null
 ) => Component<State, Props, Methods>
 
+export type Hook = () => any
+
+const emptyFunc = () => {}
 export function defineComponent<
   State = {},
   Props = {},
@@ -62,6 +67,8 @@ export function defineComponent<
 >({
   render,
   state,
+  onMounted = emptyFunc,
+  onUnmounted = emptyFunc,
   ...methods
 }: ComponentOptions<State, Props, Methods>): ComponentClass<
   State,
@@ -79,7 +86,7 @@ export function defineComponent<
     #parentComponent: Component | null = null
     #subscriptions: VoidFunction[] = []
 
-    // when the component is mounted, get its top-level children
+    // when the component is mounted, get its top-level children elements
     get elements(): (HTMLElement | Text)[] {
       if (!this.vdom || !this.vdom.el) return []
       if (this.vdom.type === VDOM_TYPE.FRAGMENT) {
@@ -100,8 +107,12 @@ export function defineComponent<
     }
 
     get offset() {
-      if (!this.#hostEl) return 0
-      return Array.from(this.#hostEl.childNodes).indexOf(this.firstElement)
+      if (!this.#hostEl || !this.vdom) return 0
+
+      if (this.vdom.type === VDOM_TYPE.FRAGMENT) {
+        return Array.from(this.#hostEl.childNodes).indexOf(this.firstElement)
+      }
+      return 0
     }
 
     constructor(
@@ -168,7 +179,13 @@ export function defineComponent<
       this.#hostEl = parentEl
       this.vdom = this.render()
 
-      mountDOM(this.vdom, parentEl, index, this as unknown as Component)
+      mountDOM(
+        this.vdom,
+        parentEl,
+        index,
+        this as unknown as Component,
+        onMounted
+      )
       this.#wireEventHandlers()
       this.#isMounted = true
     }
@@ -179,7 +196,7 @@ export function defineComponent<
       }
       if (this.vdom) {
         // there are more need to do
-        destroyDOM(this.vdom)
+        destroyDOM(this.vdom, onUnmounted)
         this.vdom = null
         this.#isMounted = false
         this.state = {} as State

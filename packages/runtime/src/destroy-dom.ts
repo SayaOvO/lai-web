@@ -1,3 +1,4 @@
+import { Hook } from './component'
 import { removeListener } from './events'
 import {
   ComponentVNode,
@@ -7,8 +8,9 @@ import {
   VDOM_TYPE,
   VNode,
 } from './h'
+import { enqueueTask } from './scheduler'
 
-export function destroyDOM(vdom: VNode) {
+export function destroyDOM(vdom: VNode, onUnmounted?: Hook) {
   const { type } = vdom
 
   switch (type) {
@@ -25,7 +27,7 @@ export function destroyDOM(vdom: VNode) {
       break
     }
     case VDOM_TYPE.COMPONENT: {
-      destroyComponentNode(vdom)
+      destroyComponentNode(vdom, onUnmounted)
     }
   }
   delete vdom.el
@@ -51,19 +53,21 @@ function destroyElementNode(vdom: ElementVNode) {
     delete vdom.listeners
   }
   el.remove()
-
-  children.forEach(destroyDOM) // remove listeners of children
+  children.forEach((child) => destroyDOM(child))
 }
 
 function destroyFragmentNodes(vdom: FragmentVNode) {
   const { children } = vdom
-  children.forEach(destroyDOM)
+  children.forEach((child) => destroyDOM(child))
 }
 
-function destroyComponentNode(vdom: ComponentVNode) {
+function destroyComponentNode(vdom: ComponentVNode, onUnmounted?: Hook) {
   const { children, component } = vdom
   if (component) {
     component.unmount()
+    if (onUnmounted) {
+      enqueueTask(onUnmounted)
+    }
   }
-  children.forEach(destroyDOM)
+  children.forEach((child) => destroyDOM(child))
 }

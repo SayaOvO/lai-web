@@ -9,14 +9,16 @@ import {
 } from './h'
 import { setAttributes } from './attributes'
 import { addEventListeners } from './events'
-import { Component } from './component'
+import { Component, Hook } from './component'
 import { extractPropsAndEvents } from './utils/props'
+import { enqueueTask } from './scheduler'
 
 export function mountDOM(
   vdom: VNode,
   parentEl: HTMLElement,
-  index: number | null,
-  hostComponent?: Component // for binding handler's this value
+  index?: number | null,
+  hostComponent?: Component, // for binding handler's this value
+  onMounted?: Hook
 ) {
   const { type } = vdom
 
@@ -34,7 +36,7 @@ export function mountDOM(
       break
     }
     case VDOM_TYPE.COMPONENT: {
-      mountComponentNode(vdom, parentEl, index, hostComponent)
+      mountComponentNode(vdom, parentEl, index, hostComponent, onMounted)
       break
     }
     default: {
@@ -77,7 +79,7 @@ function mountTextNode(
 function mountElementNode(
   vdom: ElementVNode,
   parentEl: HTMLElement,
-  index: number | null,
+  index?: number | null,
   hostComponent?: Component
 ) {
   const { tag, children } = vdom
@@ -91,13 +93,17 @@ function mountElementNode(
 function mountComponentNode(
   vdom: ComponentVNode,
   parentEl: HTMLElement,
-  index: number | null,
-  hostComponent: Component | null = null
+  index?: number | null,
+  hostComponent: Component | null = null,
+  onMounted?: Hook
 ) {
   const { tag: Component } = vdom
   const { props, events } = extractPropsAndEvents(vdom)
   const component = new Component(props, events, hostComponent)
   component.mount(parentEl, index)
+  if (onMounted) {
+    enqueueTask(onMounted)
+  }
   vdom.component = component
   vdom.el = component.firstElement
 }
@@ -105,7 +111,7 @@ function mountComponentNode(
 function mountFragmentNodes(
   vdom: FragmentVNode,
   parentEl: HTMLElement,
-  index: number | null,
+  index?: number | null,
   hostComponent?: Component
 ) {
   const { children } = vdom
