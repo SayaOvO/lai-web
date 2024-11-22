@@ -1,5 +1,12 @@
 import { removeListener } from './events'
-import { ElementVNode, FragmentVNode, TEXTVNode, VDOM_TYPE, VNode } from './h'
+import {
+  ComponentVNode,
+  ElementVNode,
+  FragmentVNode,
+  TEXTVNode,
+  VDOM_TYPE,
+  VNode,
+} from './h'
 
 export function destroyDOM(vdom: VNode) {
   const { type } = vdom
@@ -15,6 +22,10 @@ export function destroyDOM(vdom: VNode) {
     }
     case VDOM_TYPE.FRAGMENT: {
       destroyFragmentNodes(vdom)
+      break
+    }
+    case VDOM_TYPE.COMPONENT: {
+      destroyComponentNode(vdom)
     }
   }
   delete vdom.el
@@ -46,5 +57,13 @@ function destroyElementNode(vdom: ElementVNode) {
 
 function destroyFragmentNodes(vdom: FragmentVNode) {
   const { children } = vdom
+  children.forEach(destroyDOM)
+}
+
+function destroyComponentNode(vdom: ComponentVNode) {
+  const { children, component } = vdom
+  if (component) {
+    component.unmount()
+  }
   children.forEach(destroyDOM)
 }

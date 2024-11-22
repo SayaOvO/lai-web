@@ -138,8 +138,6 @@ export function defineComponent<
       if (!equal(newProps, this.props)) {
         this.props = newProps
         this.#patch()
-      } else {
-        this.props = newProps
       }
     }
     emit(commandName: string, payload?: any) {
@@ -148,6 +146,9 @@ export function defineComponent<
 
     // rerender
     #patch() {
+      if (!this.#isMounted) {
+        throw new Error('The component is not mounted yet.')
+      }
       if (!this.vdom || !this.#hostEl) {
         return
       }

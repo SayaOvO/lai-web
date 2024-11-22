@@ -178,7 +178,8 @@ function patchChildren(
 function patchClasses(oldClass: unknown, newClass: unknown, el: HTMLElement) {
   const oldClasses = toClassList(oldClass)
   const newClasses = toClassList(newClass)
-  const { added, removed } = arraysDiff(oldClasses, newClasses)
+
+  const { added, removed } = arraysDiff(newClasses, oldClasses)
   if (added.length > 0) {
     el.classList.add(...added)
   }
